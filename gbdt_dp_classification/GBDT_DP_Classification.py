@@ -126,6 +126,7 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
             if t_e == 1:
                 I=np.array(self.data.index)
                 np.random.shuffle(I)
+                begin_part=0
                 
             #Calcula a quantidade de amostras 
             n_samples  = self.data.shape[0]*learning_rate*((1-learning_rate)**t_e)

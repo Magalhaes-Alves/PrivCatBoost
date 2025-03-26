@@ -1,16 +1,14 @@
-from gbdt_dp_regression.HyperParameters import HyperParameters
+from PrivCatBoostRegression.HyperParameters import HyperParameters
 import pandas as pd
 import numpy as np
 import math
-from gbdt_dp_regression.Tree import Tree
-from sklearn.metrics import mean_squared_error
+from PrivCatBoostClassification.Tree import Tree
 from sklearn.base import ClassifierMixin, BaseEstimator
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
-from gbdt_dp_regression.Gain import Gain
+from PrivCatBoostClassification.Gain import Gain
+from PrivCatBoostClassification.Error import Error
 
 
-class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
+class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
     def __init__(
         self,
         max_depth,
@@ -23,6 +21,7 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
         type_gain=0,
         min_node_support=2,
         type_tree=0,
+        return_losses=False,
     ):
         """
         max_depth -> Maximum depth allowed for each decision tree in the ensemble.
@@ -49,6 +48,7 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
         self.target = None
         self.privacy_budget = privacy_budget
         self.type_tree = type_tree
+        self._return_losses = return_losses
 
         self.hyperparameters = HyperParameters(
             regularization=regularization,
@@ -64,6 +64,7 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
         # Definição estrutura para os gradientes
 
         self.forest = []
+        self.loss = []
 
         self._normalize = None
         self.categorical_features = categorical_features
@@ -169,6 +170,10 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
 
             self.prediction += pd.DataFrame(predict)
 
+            self.loss.append(
+                    Error.meanSquaredErrorLoss(self.target, self.prediction)
+                )
+
             # print(f"Treinamento da arvore {tree} levou {getTime()-now}")
 
             # print("MSE:", mean_squared_error(self._normalize.inverse_transform([self.target]),self._normalize.inverse_transform([self.prediction])))
@@ -177,6 +182,8 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
         # print('Gradient:\n',self.gradient)
 
         self.__desaloc_data()
+        if self._return_losses:
+            return self.loss
 
     def __desaloc_data(self):
         del self.data
@@ -196,7 +203,7 @@ class GBDT_DP_Classification(ClassifierMixin, BaseEstimator):
 
             predictons = predictons + (tree.predict(instances))
 
-        return np.where(predictons >= 0, 1, 0).reshape(-1, 1)
+        return np.where(predictons >= 0, 1, -1).reshape(-1, 1)
 
     def showTree(self, id_tree):
         def _traverseTree(raiz, nivel=0):

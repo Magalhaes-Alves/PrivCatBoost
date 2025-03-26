@@ -1,16 +1,16 @@
-from gbdt_dp_regression.HyperParameters import HyperParameters
+from PrivCatBoostRegression.HyperParameters import HyperParameters
 import pandas as pd
 import numpy as np
 import math
-from gbdt_dp_regression.Tree import Tree
+from PrivCatBoostRegression.Tree import Tree
 from sklearn.metrics import mean_squared_error
-from sklearn.base import ClassifierMixin,BaseEstimator
+from sklearn.base import RegressorMixin,BaseEstimator
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
-from gbdt_dp_regression.Gain import Gain
+from PrivCatBoostRegression.Gain import Gain
 
 
-class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
+class GBDT_DP_Regression(RegressorMixin,BaseEstimator):
 
 
     def __init__(self, 
@@ -68,21 +68,18 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
         self._normalize=None
         self.categorical_features=categorical_features
         self._order =None
-        self._classes=None
                 
     def preprocessing(self,data,target):
 
-        #Scale Target 
+        #Normalize data
         self.data = data.copy().reset_index().drop(['index'],axis=1)
-        self.target = target.copy().reset_index().drop(['index'],axis=1)
-        self.target.columns =[0]
-        self.target = self.target.apply(lambda x:2*x-1)
-
+        self._normalize = MinMaxScaler((-1,1))
+        self.target = pd.DataFrame(self._normalize.fit_transform(target.values).reshape(-1,1),index=self.data.index)
         self.gradient = self.target.apply(lambda x:-1*x)
         self.prediction = pd.DataFrame(np.zeros(data.shape[0]))
 
         self.hyperparameters.categoricalFeatures =[self.data.columns.get_loc(i)for i in self.categorical_features]
-        self.data.columns=list(range(data.shape[1]))
+        self.data.columns=(range(data.shape[1]))
 
         #Ordenar todas as features por indices
 
@@ -100,7 +97,6 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
 
     def fit(self,data,target):
         
-        self.classes_=target
         self.preprocessing(data,target)
         
         N_ensembles=math.ceil(self.total_trees/self.trees_in_ensemble)
@@ -108,11 +104,11 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
         gl =self.hyperparameters.gl
         learning_rate = self.hyperparameters.learningRate
         regularization = self.hyperparameters.regularization
-        begin_part = 0
+        
         for tree in range(1,self.total_trees+1):
             
             #now = getTime()
-            #print(f"=========Treino Árvore {tree}=========")
+            print(f"=========Treino Árvore {tree}=========")
 
             #Update Gradient
             if tree>1:                
@@ -126,12 +122,14 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
             if t_e == 1:
                 I=np.array(self.data.index)
                 np.random.shuffle(I)
-                begin_part=0
+                begin_part = 0
+
                 
             #Calcula a quantidade de amostras 
             n_samples  = self.data.shape[0]*learning_rate*((1-learning_rate)**t_e)
             n_samples = round(n_samples/(1-((1-learning_rate)**self.trees_in_ensemble)))
 
+            #Fim do particionamento
             end_part = min(begin_part+n_samples,I.shape[0])
 
             select_index =I[begin_part:end_part]
@@ -149,7 +147,6 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
             sub_xi = self.data.loc[select_index]
             sub_grad = self.gradient.loc[select_index]
 
-              
             new_tree = Tree(sub_xi,
                             sub_grad.to_numpy(),
                             self.hyperparameters,
@@ -172,7 +169,6 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
             #print("RMSE", mean_squared_error(self._normalize.inverse_transform([self.target]),self._normalize.inverse_transform([self.prediction]),squared=False))
 
         #print('Gradient:\n',self.gradient)
-
         self.__desaloc_data()
 
     def __desaloc_data(self):
@@ -189,6 +185,9 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
 
         predictons = np.zeros(instances.shape[0])
 
+        if len(self.forest) ==0:
+            raise Exception("Não há árvores para realizar a predição.")
+
         for k,tree in enumerate(self.forest):
                 
             #print(f'Iter: {k}')
@@ -196,7 +195,7 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
             predictons = predictons+(tree.predict(instances))
 
         
-        return np.where(predictons>=0,1,0).reshape(-1,1)
+        return self._normalize.inverse_transform([predictons]).ravel()
         
     def showTree(self,id_tree):
         
@@ -233,14 +232,4 @@ class GBDT_DP_Classification(ClassifierMixin,BaseEstimator):
                 _traverseTree(raiz.children[k],nivel+1)
 
         _traverseTree(self.forest[id_tree].root)
-    
-
-    @property
-    def classes_(self):
-        return self._classes
-
-    @classes_.setter
-    def classes_(self,x):
-        self._classes = np.unique(x)
-
-    
+           

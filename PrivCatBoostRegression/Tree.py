@@ -1,9 +1,7 @@
 import pandas as pd
 import numpy as np
-from gbdt_dp_regression.Node import Node
-from gbdt_dp_regression.Gain import Gain
-
-from utilities import *
+from PrivCatBoostRegression.Node import Node
+from PrivCatBoostRegression.Gain import Gain
 
 class Tree:
 

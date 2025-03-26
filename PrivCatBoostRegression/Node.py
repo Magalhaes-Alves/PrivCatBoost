@@ -1,8 +1,8 @@
 import numpy as np
-from gbdt_dp_regression import Gain
-from gbdt_dp_regression.Privacy import exponential, laplace_mech
+from PrivCatBoostRegression import Gain
+from PrivCatBoostRegression.Privacy import exponential, laplace_mech
 from utilities import *
-from gbdt_dp_regression.Gain import Gain
+from PrivCatBoostRegression.Gain import Gain
 from math import fabs
 
 

@@ -10,10 +10,10 @@ from sklearn.metrics import mean_squared_error
 from PrivCatBoostRegression.Gain import Gain
 
 
-class GBDT_DP_Regression(RegressorMixin,BaseEstimator):
+class PrivCatBoostRegression(RegressorMixin,BaseEstimator):
 
 
-    def __init__(self, 
+    def __init__(self,
                  max_depth, 
                  privacy_budget, 
                  regularization,

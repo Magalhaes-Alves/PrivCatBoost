@@ -64,12 +64,13 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         # Definição estrutura para os gradientes
 
         self.forest = []
-        self.loss = []
+        self._loss = []
 
-        self._normalize = None
         self.categorical_features = categorical_features
+        self._categorical_possible_values={}
         self._order = None
         self._classes = None
+        self._gamma_m = []
 
     def preprocessing(self, data, target):
         # Assuming target is scaled
@@ -85,6 +86,12 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         ]
         self.data.columns = list(range(data.shape[1]))
 
+        # self._categorical_possible_values={
+            
+        #     i: self.data.
+
+        #     for i in self.hyperparameters.categoricalFeatures
+        # }
         # Ordenar todas as features por indices
 
         order = np.zeros((data.shape[1], data.shape[0]))
@@ -99,6 +106,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         self._order = order
 
     def fit(self, data, target):
+        self._loss = []
         self.classes_ = target
         self.preprocessing(data, target)
 
@@ -168,11 +176,17 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
 
             predict = new_tree.predict(self.data)
 
+            # Calc of gamma_m
+
+            # self._gamma_m.append(
+            #     PrivCatBoostClassification.gammaCalculation(
+            #         self.gradient.to_numpy(), predict.reshape((-1,1))
+            #     )
+            # )
+
             self.prediction += pd.DataFrame(predict)
 
-            self.loss.append(
-                    Error.meanSquaredErrorLoss(self.target, self.prediction)
-                )
+            self._loss.append(Error.meanSquaredErrorLoss(self.target, self.prediction))
 
             # print(f"Treinamento da arvore {tree} levou {getTime()-now}")
 
@@ -183,7 +197,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
 
         self.__desaloc_data()
         if self._return_losses:
-            return self.loss
+            return self._loss
 
     def __desaloc_data(self):
         del self.data
@@ -202,6 +216,8 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
             # print(f'Iter: {k}')
 
             predictons = predictons + (tree.predict(instances))
+
+            """self._gamma_m[k] *"""
 
         return np.where(predictons >= 0, 1, -1).reshape(-1, 1)
 
@@ -245,3 +261,9 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
     @classes_.setter
     def classes_(self, x):
         self._classes = np.unique(x)
+
+    @staticmethod
+    def gammaCalculation(r_im, prediction):
+        numerator = np.sum((r_im * prediction))
+        denominator = np.sum(np.square(prediction))
+        return numerator / denominator if denominator != 0 else 0.0

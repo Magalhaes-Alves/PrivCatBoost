@@ -21,7 +21,6 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         type_gain=0,
         min_node_support=2,
         type_tree=0,
-        return_losses=False,
     ):
         """
         max_depth -> Maximum depth allowed for each decision tree in the ensemble.
@@ -48,7 +47,6 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         self.target = None
         self.privacy_budget = privacy_budget
         self.type_tree = type_tree
-        self._return_losses = return_losses
 
         self.hyperparameters = HyperParameters(
             regularization=regularization,
@@ -67,7 +65,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         self._loss = []
 
         self.categorical_features = categorical_features
-        self._categorical_possible_values={}
+        self._categorical_possible_values = {}
         self._order = None
         self._classes = None
         self._gamma_m = []
@@ -78,7 +76,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         self.target = target.copy().reset_index().drop(["index"], axis=1)
         self.target.columns = [0]
 
-        self.gradient = self.target.apply(lambda x: -1 * x)
+        self.gradient = self.target.apply(lambda x: -1*x)
         self.prediction = pd.DataFrame(np.zeros(data.shape[0]))
 
         self.hyperparameters.categoricalFeatures = [
@@ -87,7 +85,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         self.data.columns = list(range(data.shape[1]))
 
         # self._categorical_possible_values={
-            
+
         #     i: self.data.
 
         #     for i in self.hyperparameters.categoricalFeatures
@@ -105,7 +103,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         # print(f"Tempo de Ordenação: {getTime()-time}")
         self._order = order
 
-    def fit(self, data, target):
+    def fit(self, data, target, return_losses=False):
         self._loss = []
         self.classes_ = target
         self.preprocessing(data, target)
@@ -122,7 +120,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
 
             # Update Gradient
             if tree > 1:
-                self.gradient = -1 * (self.target - self.prediction)
+                self.gradient = -1 *(self.target - self.prediction)
 
             # Verify in which ensemble the tree be.
             t_e = tree % self.trees_in_ensemble
@@ -196,7 +194,7 @@ class PrivCatBoostClassification(ClassifierMixin, BaseEstimator):
         # print('Gradient:\n',self.gradient)
 
         self.__desaloc_data()
-        if self._return_losses:
+        if return_losses:
             return self._loss
 
     def __desaloc_data(self):

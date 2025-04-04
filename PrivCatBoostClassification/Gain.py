@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import numba
 from numba import jit
 
 class Gain:

@@ -1,24 +1,21 @@
 import numpy as np
 
-class Error:
 
+class Error:
     @staticmethod
     def error(y_true, y_pred):
-
-        return Error.mean_squared_error(y_true,y_pred)
-
+        return Error.mean_squared_error(y_true, y_pred)
 
     @staticmethod
     def error_Derivative(y_true, y_pred):
-
-        return Error.mean_squared_error_derivative(y_true,y_pred)
+        return Error.mean_squared_error_derivative(y_true, y_pred)
 
     @staticmethod
     def mean_squared_error(y_true, y_pred):
         """
         Calcula o Mean Squared Error (MSE).
         """
-        return ((y_true - y_pred) ** 2)/2
+        return ((y_true - y_pred) ** 2) / 2
 
     @staticmethod
     def mean_squared_error_derivative(y_true, y_pred):
@@ -50,6 +47,16 @@ class Error:
         """
         y_true, y_pred = np.array(y_true), np.array(y_pred)
         nonzero_indices = y_true != 0
-        return np.mean(
-            -np.sign(y_true[nonzero_indices] - y_pred[nonzero_indices]) / y_true[nonzero_indices]
-        ) * 100 / len(y_true)
+        return (
+            np.mean(
+                -np.sign(y_true[nonzero_indices] - y_pred[nonzero_indices])
+                / y_true[nonzero_indices]
+            )
+            * 100
+            / len(y_true)
+        )
+
+    @staticmethod
+    def meanSquaredErrorLoss(y, y_pred):
+        loss = (1 / len(y)) * 0.5 * np.sum(np.square(y.to_numpy() - y_pred.to_numpy()))
+        return loss

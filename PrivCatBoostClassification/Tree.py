@@ -89,9 +89,9 @@ class Tree:
         return node.classification
 
     def predict(self, data):
-        predictions = []
+        #predictions = []
 
-        # data.apply(self._predictInstances,axis=1).values.reshape(-1,1)
+        return data.apply(self._predictInstances,axis=1).values.reshape(-1,1)
         for _, instance in data.iterrows():
             predictions.append(self._predictInstances(instance))
 
